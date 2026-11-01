@@ -1,0 +1,63 @@
+/* Shelf Serif, SIL OFL 1.1, Copyright 2026 thecsguy.
+   Paths assume this file sits in css/ next to fonts/. */
+
+/* Variable font: one file, any weight from 300 to 700. Preferred. */
+@font-face {
+  font-family: "Shelf Serif";
+  src: url("../fonts/woff2/ShelfSerif[wght].woff2") format("woff2") tech(variations),
+       url("../fonts/woff2/ShelfSerif[wght].woff2") format("woff2-variations"),
+       url("../fonts/variable/ShelfSerif[wght].ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Static fallbacks (hinted TrueType), for browsers without variable-font
+   support. */
+@font-face {
+  font-family: "Shelf Serif Static";
+  src: url("../fonts/woff2/ShelfSerif-Light.woff2") format("woff2"),
+       url("../fonts/ttf/ShelfSerif-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Shelf Serif Static";
+  src: url("../fonts/woff2/ShelfSerif-Regular.woff2") format("woff2"),
+       url("../fonts/ttf/ShelfSerif-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Shelf Serif Static";
+  src: url("../fonts/woff2/ShelfSerif-Bold.woff2") format("woff2"),
+       url("../fonts/ttf/ShelfSerif-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-shelf-serif: "Shelf Serif", "Shelf Serif Static", Georgia, serif;
+}
+
+/* The wide-tracked all-caps setting of the Grok Bot Shelf wordmark.
+   Light (300) is the weight that matches the logo's stroke. The logo's
+   gap between letters is 0.645 of the cap height and the word gap 1.47;
+   with the font's own sidebearings that is 0.35em of letter-spacing and
+   another 0.3em on the space. Regular and Bold take the same tracking. */
+.shelf-caps {
+  font-family: var(--font-shelf-serif);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  word-spacing: 0.3em;
+}
+.shelf-caps.regular { font-weight: 400; }
+.shelf-caps.bold { font-weight: 700; }
+
+/* Figures are tabular by default; ask for fitted widths in running text. */
+.shelf-pnum { font-variant-numeric: proportional-nums; }
+.shelf-tnum { font-variant-numeric: tabular-nums; }
