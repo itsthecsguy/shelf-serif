@@ -1,6 +1,8 @@
 # Shelf Serif
 
-![Shelf Serif](docs/images/hero.png)
+[![Shelf Serif launch video](docs/images/launch.gif)](docs/video/shelf-serif-launch.mp4)
+
+[Watch with sound](docs/video/shelf-serif-launch.mp4)
 
 Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://grokbotshelf.com). Its bowls are rounded rectangles with flat sides, and its stems stand on thin slab serifs, the "shelves" in the name. Light is drawn to sit beside the GROK BOT SHELF wordmark.
 
@@ -272,6 +274,7 @@ The charts below show each face's 221 visible characters. They leave out the spa
 | `css/shelf-serif.css` | `@font-face` rules and the helper classes | |
 | `generator/` | The Python that draws and checks every glyph | |
 | `docs/make_images.py` | Renders the images in this README | |
+| `docs/make_video.py`, `docs/video/` | Renders the launch video and the GIF at the top of this README | |
 
 ## Design details
 
@@ -341,6 +344,12 @@ To run Font Bakery and regenerate the README images, install the extra tools fir
 .venv/bin/playwright install chromium
 .venv/bin/fontbakery check-universal fonts/otf/*.otf
 .venv/bin/python docs/make_images.py
+```
+
+`docs/make_video.py` re-renders the launch video from the current fonts, using the same Playwright setup. It also needs ffmpeg with libx264.
+
+```bash
+.venv/bin/python docs/make_video.py
 ```
 
 Font Bakery's universal profile reports 0 failures for the OTF, TTF and variable files. Its only warning is for overlapping paths in the variable font, which are deliberate because interpolation needs them.

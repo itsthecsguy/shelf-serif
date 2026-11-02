@@ -1,0 +1,247 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+@font-face {
+  font-family: "Shelf Serif";
+  src: url("../../fonts/woff2/ShelfSerif%5Bwght%5D.woff2") format("woff2");
+  font-weight: 300 700;
+}
+html, body { margin: 0; background: #000; }
+svg { display: block; font-family: "Shelf Serif"; font-kerning: normal; }
+</style>
+</head>
+<body>
+<svg id="stage" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+<script>
+// Every shot is a pure function of t in seconds, so make_video.py can seek to any frame.
+let G, fit = {}, mark = [];
+const cv = document.createElement('canvas').getContext('2d');
+
+const clamp = v => Math.min(1, Math.max(0, v));
+const ramp = (t, a, b) => clamp((t - a) / (b - a));
+const out3 = p => 1 - (1 - p) ** 3;
+const io3 = p => p < .5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2;
+const sine = p => (1 - Math.cos(Math.PI * p)) / 2;
+
+function measure(text, weight, size, ls = 0) {
+  cv.font = `${weight} ${size}px "Shelf Serif"`;
+  cv.fontKerning = 'normal';
+  cv.letterSpacing = `${ls}px`;
+  return cv.measureText(text);
+}
+function spacingFor(text, weight, size, inkWidth) {
+  const m = measure(text, weight, size);
+  return (inkWidth - m.actualBoundingBoxLeft - m.actualBoundingBoxRight) / (text.length - 1);
+}
+
+async function init(data) {
+  G = data;
+  await Promise.all([300, 400, 500, 700].map(w => document.fonts.load(`${w} 40px "Shelf Serif"`)));
+  await document.fonts.ready;
+  // Letter spacing is fitted to the ink widths measured from the posted video.
+  fit.foot = spacingFor('AN ORIGINAL TYPEFACE', 300, 20, 272);
+  fit.head = spacingFor('HAIRLINE SERIF', 300, 33, 290);
+  fit.tag = spacingFor('AN ORIGINAL TYPEFACE FOR GROK BOT SHELF', 300, 30, 779);
+  fit.chars = spacingFor('NOPQRSTUVWXYZ', 300, 170, 1548);
+  const word = 'SHELF SERIF', size = 221;
+  const ls = spacingFor(word, 300, size, 1438);
+  const ink = measure(word, 300, size, ls);
+  const x0 = 960 - (ink.actualBoundingBoxRight - ink.actualBoundingBoxLeft) / 2;
+  mark = [...word].map((c, i) => c === ' ' ? null :
+    { c, x: x0 + measure(word.slice(0, i), 300, size).width + i * ls }).filter(Boolean);
+  return fit;
+}
+
+function pathD(contour, x, y, s) {
+  // Font units to screen: y up becomes y down.
+  const X = v => (x + v * s).toFixed(2), Y = v => (y - v * s).toFixed(2);
+  return contour.map(c => c[0] === 'Z' ? 'Z'
+    : c[0] === 'Q' ? `Q${X(c[1])} ${Y(c[2])} ${X(c[3])} ${Y(c[4])}`
+    : `${c[0]}${X(c[1])} ${Y(c[2])}`).join('');
+}
+const glyphD = (g, x, y, s) => g.contours.map(c => pathD(c, x, y, s)).join('');
+const fill = (d, color, op = 1) => `<path d="${d}" fill="${color}" fill-opacity="${op}"/>`;
+const line = (x1, y1, x2, y2, color, w = 1, op = 1) =>
+  `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${w}" opacity="${op}"/>`;
+function text(x, y, str, { size = 20, weight = 300, ls = 0, color = '#aaa', op = 1, anchor = 'start' } = {}) {
+  // An end-anchored run counts its trailing letter space, so push it back out.
+  const nudge = anchor === 'end' ? ls : anchor === 'middle' ? ls / 2 : 0;
+  return `<text x="${x + nudge}" y="${y}" font-size="${size}" font-weight="${weight}" letter-spacing="${ls}"
+    fill="${color}" opacity="${op}" text-anchor="${anchor}">${str}</text>`;
+}
+const bg = c => `<rect width="1920" height="1080" fill="${c}"/>`;
+
+function footer(color = '#aaa', op = 1) {
+  const o = { ls: fit.foot, color, op };
+  return text(60, 990, 'SHELF SERIF', o) + text(60, 1020, 'AN ORIGINAL TYPEFACE', o) +
+    text(1860, 1020, 'SIL OPEN FONT LICENSE', { ...o, anchor: 'end' });
+}
+function dimV(x, y1, y2, p, color = '#fff', tick = '#fff', fromBottom = true) {
+  // y1 is the top of the bracket, y2 the bottom. It grows from one end as p goes to 1.
+  const a = fromBottom ? y2 + (y1 - y2) * p : y1, b = fromBottom ? y2 : y1 + (y2 - y1) * p;
+  return line(x, a, x, b, color, 2) + line(x - 12, y2, x + 12, y2, tick, 2, p > 0 ? 1 : 0) +
+    (p > .95 ? line(x - 12, y1, x + 12, y1, tick, 2) : '');
+}
+function dimH(x1, x2, y, p, color = '#fff', tick = '#fff') {
+  return line(x1, y, x1 + (x2 - x1) * p, y, color, 2) + line(x1, y - 12, x1, y + 12, tick, 2, p > 0 ? 1 : 0) +
+    (p > .95 ? line(x2, y - 12, x2, y + 12, tick, 2) : '');
+}
+
+function shotS(t) {
+  const u = .8, ox = 710, oy = 820, S = G.Light.S;
+  const adv = S.adv * u, rule = '#7c7c7c', grey = '#aaa';
+  let o = bg('#000');
+  let dots = '';
+  for (let x = 20; x < 1920; x += 40) for (let y = 20; y < 1080; y += 40) dots += `M${x - 1} ${y - 1}h2v2h-2z`;
+  o += fill(dots, '#fff', .16 * ramp(t, .2, 1));
+  for (const [y, label, start] of [[820, '0', .12], [404, '520', .37], [260, '700', .6]]) {
+    const p = out3(ramp(t, start, start + .8));
+    if (p > 0) o += line(130, y, 130 + 1730 * p, y, rule, 1.2);
+    o += text(60, y + 7, label, { ls: fit.foot, color: grey, op: ramp(t, start + .1, start + .4) });
+  }
+  o += footer('#aaa', ramp(t, .35, .6));
+  const v = out3(ramp(t, 1.02, 1.72));
+  if (v > 0) for (const x of [ox, ox + adv]) o += line(x, 872, x, 872 - 660 * v, '#5a5a5a', 1);
+
+  const fillOp = ramp(t, 3.85, 4.28);
+  if (fillOp > 0) o += fill(glyphD(S, ox, oy, u), '#fff', fillOp);
+  const draw = io3(ramp(t, 1.65, 3));
+  if (draw > 0) o += `<path d="${glyphD(S, ox, oy, u)}" fill="none" stroke="#fff" stroke-width="1.6"
+    pathLength="1" stroke-dasharray="${draw} 1"/>`;
+
+  const nodes = ramp(t, 2.75, 3.05) * (1 - ramp(t, 4.15, 4.45));
+  if (nodes > 0) {
+    let n = '';
+    for (const [x, y] of S.off) n += `<circle cx="${ox + x * u}" cy="${oy - y * u}" r="2.6" fill="#777"/>`;
+    for (const [x, y] of S.on) n += `<rect x="${ox + x * u - 4}" y="${oy - y * u - 4}" width="8" height="8" fill="#000" stroke="#fff" stroke-width="1.2"/>`;
+    o += `<g opacity="${nodes}">${n}</g>`;
+  }
+  const dims = ramp(t, 2.7, 3) * (1 - ramp(t, 4.1, 4.35));
+  if (dims > 0) o += `<g opacity="${dims}">` + line(1256, 260, 1256, 820, '#8a8a8a', 1.2) +
+    text(1292, 548, '700', { ls: fit.foot, color: grey, anchor: 'middle' }) +
+    line(ox, 866, ox + adv, 866, '#8a8a8a', 1.2) + line(ox, 858, ox, 874, '#8a8a8a', 1.2) +
+    line(ox + adv, 858, ox + adv, 874, '#8a8a8a', 1.2) +
+    text(ox + adv / 2, 900, String(S.adv), { ls: fit.foot, color: grey, anchor: 'middle' }) + '</g>';
+  return o;
+}
+
+const zoom = (t, start) => 3.69 + .0947 * (t - start);
+
+function shotSerif(t) {
+  const s = zoom(t, 5), Xc = 150, Yc = 35;
+  const X = v => 960 + s * (v - Xc), Y = v => 540 + s * (Yc - v), base = Y(0);
+  let o = bg('#000');
+  o += line(0, base, 1920 * out3(ramp(t, 4.95, 5.55)), base, '#666', 1.2);
+  o += fill(glyphD(G.Light.I, X(0), base, s), '#fff');
+  o += text(60, 94, 'HAIRLINE SERIF', { size: 33, weight: 300, ls: fit.head, color: '#fff', op: ramp(t, 5.15, 5.35) });
+  const a = ramp(t, 5.35, 5.6), b = ramp(t, 5.45, 5.75);
+  if (a > 0) o += `<g opacity="${a}">` + dimV(X(211.9), Y(G.serifH), base, out3(a)) +
+    text(X(211.9) + 38, (Y(G.serifH) + base) / 2 + 10, String(G.serifH),
+      { size: 28, weight: 400, color: '#fff', anchor: 'middle' }) + '</g>';
+  if (b > 0) o += `<g opacity="${b}">` + dimH(X(32.2), X(32.2 + G.serifL), base + G.serifL * s, out3(b)) +
+    text((X(32.2) + X(32.2 + G.serifL)) / 2, base + 139, String(G.serifL),
+      { size: 28, weight: 400, color: '#fff', anchor: 'middle' }) + '</g>';
+  return o + footer();
+}
+
+function shotSlab(t) {
+  const s = zoom(t, 7), O = G.Light.O, Xc = 520, Yc = 589.8;
+  const X = v => 960 + s * (v - Xc), Y = v => 540 + s * (Yc - v);
+  const right = O.xMax, top = O.yMax;
+  let o = bg('#000') + fill(glyphD(O, X(0), Y(0), s), '#fff');
+  o += text(1860, 94, 'SQUARED SLAB', { size: 33, weight: 300, ls: fit.head, color: '#fff', anchor: 'end', op: ramp(t, 7.15, 7.35) });
+  const a = ramp(t, 7.35, 7.65), b = ramp(t, 7.45, 7.75);
+  if (a > 0) {
+    const y = Y(469.4), x1 = X(right - G.stemV), x2 = X(right);
+    o += `<g opacity="${clamp(a * 2)}">` + dimH(x1, x2, y, out3(a), '#000', '#777') +
+      text((x1 + x2) / 2, y + 49, String(G.stemV), { size: 28, weight: 400, color: '#000', anchor: 'middle' }) + '</g>';
+  }
+  if (b > 0) {
+    const x = X(399.4), y1 = Y(top), y2 = Y(top - G.stemH);
+    o += `<g opacity="${clamp(b * 2)}">` + dimV(x, y1, y2, out3(b), '#000', '#777') +
+      text(x + 38, (y1 + y2) / 2 + 10, String(G.stemH), { size: 28, weight: 400, color: '#000', anchor: 'middle' }) + '</g>';
+  }
+  return o + footer();
+}
+
+const CARDS = [['A', 300], ['7', 700], ['G', 300], ['M', 700], ['K', 300], ['3', 700], ['Q', 300], ['B', 700]];
+function shotCards(t) {
+  const i = Math.min(CARDS.length - 1, Math.floor((t - 9) / .5));
+  const [c, w] = CARDS[i], dt = t - (9 + i * .5);
+  const light = w === 300, g = G[light ? 'Light' : 'Bold'][c];
+  const s = 1.018 + .032 * Math.exp(-dt / .08);
+  const ink = light ? '#000' : '#fff', paper = light ? '#fff' : '#000', grey = light ? '#888' : '#aaa';
+  return bg(paper) + fill(glyphD(g, 960 - g.adv * s / 2, 540 + (g.yMax + g.yMin) / 2 * s, s), ink) +
+    text(60, 80, c, { color: grey }) + text(1860, 80, String(w), { color: grey, anchor: 'end' }) +
+    footer(light ? '#666' : '#aaa');
+}
+
+function variableWeight(t) {
+  const up = sine(ramp(t, 14.66, 15.26)), down = sine(ramp(t, 15.26, 15.84));
+  return 300 + 400 * up - 400 * down;
+}
+function shotWeights(t) {
+  const rows = [['LIGHT', 300, 328, 13], ['REGULAR', 400, 515, 13.5], ['BOLD', 700, 701, 14], ['VARIABLE', null, 888, 14.5]];
+  let o = bg('#000');
+  rows.forEach(([name, w, y, start], i) => {
+    const p = ramp(t, start - .1, start + .1);
+    if (p <= 0) return;
+    const weight = w ?? variableWeight(t), yy = y + 10 * (1 - out3(p));
+    o += text(160, yy, name, { size: 190, weight, color: '#fff', op: p });
+    o += text(1760, yy, String(Math.round(weight)), { size: 190, weight, color: '#fff', op: p, anchor: 'end' });
+    if (i < 3) {
+      const r = out3(ramp(t, start + .05, start + .75));
+      if (r > 0) o += line(160, 353 + 187 * i, 160 + 1600 * r, 353 + 187 * i, '#3c3c3c', 1.5);
+    }
+  });
+  return o + footer();
+}
+
+function shotChars(t) {
+  const rows = [['ABCDEFGHIJKLM', 410], ['NOPQRSTUVWXYZ', 599], ['0123456789&amp;?!', 788]];
+  let o = bg('#000'), i = 0;
+  for (const [str, y] of rows) {
+    const chars = str.replace('&amp;', '&');
+    const spans = [...chars].map(c => {
+      const op = ramp(t, 16 + i * .025, 16.1 + i * .025);
+      i++;
+      return `<tspan fill-opacity="${op}">${c === '&' ? '&amp;' : c}</tspan>`;
+    }).join('');
+    o += `<text x="180" y="${y}" font-size="170" font-weight="300" letter-spacing="${fit.chars}" fill="#fff">${spans}</text>`;
+  }
+  return o + footer();
+}
+
+function shotMark(t) {
+  const size = .221 * (1 - .01 * (1 - out3(ramp(t, 18, 19.3))));
+  const draw = sine(ramp(t, 18.05, 18.8)), f = ramp(t, 18.6, 19.05), base = 577.5;
+  let o = bg('#000');
+  // Each contour grows from three points at once, so the letters assemble in pieces.
+  const dash = `${draw / 3} ${(1 - draw) / 3 + 1e-4}`;
+  for (const { c, x } of mark) {
+    const g = G.Light[c], gx = 960 + (x - 960) * (size / .221);
+    if (f > 0) o += fill(glyphD(g, gx, base, size), '#fff', f);
+    if (draw > 0 && f < 1) for (const k of g.contours)
+      o += `<path d="${pathD(k, gx, base, size)}" fill="none" stroke="#fff" stroke-width="1.5" opacity="${1 - f}"
+        pathLength="1" stroke-dasharray="${dash}"/>`;
+  }
+  const r = out3(ramp(t, 18.84, 19.44)) * 728;
+  if (r > 0) o += line(960 - r, 612, 960 + r, 612, '#b4b4b4', 1.3);
+  o += text(960, 677, 'AN ORIGINAL TYPEFACE FOR GROK BOT SHELF',
+    { size: 30, weight: 300, ls: fit.tag, color: '#fff', anchor: 'middle', op: ramp(t, 19.2, 19.42) });
+  const e = ramp(t, 19.45, 19.7), end = { ls: fit.foot, op: e };
+  o += text(60, 1020, 'SIL OPEN FONT LICENSE. FREE TO USE.', end);
+  o += text(1860, 1020, 'GROKBOTSHELF.COM', { ...end, anchor: 'end' });
+  return o;
+}
+
+function render(t) {
+  const f = t < 5 ? shotS : t < 7 ? shotSerif : t < 9 ? shotSlab : t < 13 ? shotCards
+    : t < 16 ? shotWeights : t < 18 ? shotChars : shotMark;
+  document.getElementById('stage').innerHTML = f(t);
+}
+</script>
+</body>
+</html>
