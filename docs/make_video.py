@@ -1,5 +1,5 @@
-"""Render the launch video from the fonts in this repository, then make the
-silent GIF the README uses as its header. Needs ffmpeg with libx264.
+"""Render the launch video from the fonts in this repository. Needs ffmpeg with
+libx264.
 
     pip install playwright fonttools && playwright install chromium
     python docs/make_video.py
@@ -20,7 +20,6 @@ VIDEO = os.path.join(ROOT, 'docs', 'video')
 SCENE = os.path.join(VIDEO, 'scene.html')
 AUDIO = os.path.join(VIDEO, 'launch-audio.m4a')
 MP4 = os.path.join(VIDEO, 'shelf-serif-launch.mp4')
-GIF = os.path.join(ROOT, 'docs', 'images', 'launch.gif')
 FPS = 30
 FRAMES = 660
 # Light's stem, thin stroke, serif height and serif overhang, in 1000 units per em.
@@ -121,13 +120,6 @@ def render_video(page):
         raise SystemExit('ffmpeg failed')
 
 
-def make_gif():
-    vf = ('fps=20,scale=960:-1:flags=lanczos,format=gray,split[a][b];'
-          '[a]palettegen=max_colors=32:stats_mode=full:reserve_transparent=0[p];'
-          '[b][p]paletteuse=dither=none:diff_mode=rectangle')
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', MP4, '-an', '-vf', vf, '-loop', '0', GIF], check=True)
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stills', help='comma-separated times in seconds; writes PNGs and skips the video')
@@ -144,9 +136,7 @@ def main():
             render_video(page)
         browser.close()
     if not args.stills:
-        make_gif()
-        for path in (MP4, GIF):
-            print(path, f'{os.path.getsize(path) / 1e6:.1f} MB')
+        print(MP4, f'{os.path.getsize(MP4) / 1e6:.1f} MB')
 
 
 if __name__ == '__main__':

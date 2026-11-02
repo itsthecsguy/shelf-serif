@@ -1,8 +1,6 @@
 # Shelf Serif
 
-[![Shelf Serif launch video](docs/images/launch.gif)](https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@main/docs/video/shelf-serif-launch.mp4)
-
-[Watch with sound](https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@main/docs/video/shelf-serif-launch.mp4)
+https://github.com/user-attachments/assets/1d129170-6882-4928-81d4-56701448c3c2
 
 Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://grokbotshelf.com). Its bowls are rounded rectangles with flat sides, and its stems stand on thin slab serifs, the "shelves" in the name. Light is drawn to sit beside the GROK BOT SHELF wordmark.
 
@@ -274,7 +272,7 @@ The charts below show each face's 221 visible characters. They leave out the spa
 | `css/shelf-serif.css` | `@font-face` rules and the helper classes | |
 | `generator/` | The Python that draws and checks every glyph | |
 | `docs/make_images.py` | Renders the images in this README | |
-| `docs/make_video.py`, `docs/video/` | Renders the launch video and the GIF at the top of this README | |
+| `docs/make_video.py`, `docs/video/` | Renders the launch video at the top of this README | |
 
 ## Design details
 
@@ -351,6 +349,8 @@ To run Font Bakery and regenerate the README images, install the extra tools fir
 ```bash
 .venv/bin/python docs/make_video.py
 ```
+
+The player at the top of this README plays a copy uploaded to GitHub, not the file in `docs/video/`. After a new render, drag the MP4 into a GitHub comment box and put the URL it gives you at the top of this file.
 
 Font Bakery's universal profile reports 0 failures for the OTF, TTF and variable files. Its only warning is for overlapping paths in the variable font, which are deliberate because interpolation needs them.
 
