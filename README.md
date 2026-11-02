@@ -1,8 +1,8 @@
 # Shelf Serif
 
-[![Shelf Serif launch video](docs/images/launch.gif)](docs/video/shelf-serif-launch.mp4)
+[![Shelf Serif launch video](docs/images/launch.gif)](https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@main/docs/video/shelf-serif-launch.mp4)
 
-[Watch with sound](docs/video/shelf-serif-launch.mp4)
+[Watch with sound](https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@main/docs/video/shelf-serif-launch.mp4)
 
 Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://grokbotshelf.com). Its bowls are rounded rectangles with flat sides, and its stems stand on thin slab serifs, the "shelves" in the name. Light is drawn to sit beside the GROK BOT SHELF wordmark.
 
