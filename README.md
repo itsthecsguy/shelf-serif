@@ -28,7 +28,7 @@ Current version is 5.000.
 
 ## Install on your computer
 
-[Download the ZIP](https://github.com/itsthecsguy/shelf-serif/archive/refs/heads/main.zip), unpack it and open the `fonts` folder.
+[Download ShelfSerif-5.000.zip](https://github.com/itsthecsguy/shelf-serif/releases/download/v5.000/ShelfSerif-5.000.zip) from the [5.000 release](https://github.com/itsthecsguy/shelf-serif/releases/tag/v5.000), unpack it and open the `fonts` folder. The ZIP holds the fonts, the stylesheet and the license.
 
 **Which file should you install?** Use `fonts/variable/ShelfSerif[wght].ttf` if your app supports variable fonts, because it holds all five weights. Otherwise install the three static files for your platform. Medium and SemiBold exist only in the variable font.
 
@@ -271,7 +271,7 @@ The charts below show each face's 221 visible characters. They leave out the spa
 | `fonts/woff2/ShelfSerif-{Light,Regular,Bold}.woff2` | Static fonts for the web | 18 KB |
 | `css/shelf-serif.css` | `@font-face` rules and the helper classes | |
 | `generator/` | The Python that draws and checks every glyph | |
-| `docs/make_images.py` | Renders the images in this README | |
+| `docs/make_images.py` | Renders the images in this README and the repository's social preview | |
 | `docs/make_video.py`, `docs/video/` | Renders the launch video at the top of this README | |
 
 ## Design details
@@ -344,13 +344,13 @@ To run Font Bakery and regenerate the README images, install the extra tools fir
 .venv/bin/python docs/make_images.py
 ```
 
-`docs/make_video.py` re-renders the launch video from the current fonts, using the same Playwright setup. It also needs ffmpeg with libx264.
+`docs/make_video.py` re-renders the launch video from the current fonts, using the same Playwright setup. It also needs ffmpeg with libx264. The soundtrack isn't in this repository, so pass a 22-second track of your own.
 
 ```bash
-.venv/bin/python docs/make_video.py
+.venv/bin/python docs/make_video.py --audio track.m4a
 ```
 
-The player at the top of this README plays a copy uploaded to GitHub, not the file in `docs/video/`. After a new render, drag the MP4 into a GitHub comment box and put the URL it gives you at the top of this file.
+The player at the top of this README plays a copy uploaded to GitHub, and the render itself isn't kept in the repository. After a new render, drag the MP4 into a GitHub comment box and put the URL it gives you at the top of this file.
 
 Font Bakery's universal profile reports 0 failures for the OTF, TTF and variable files. Its only warning is for overlapping paths in the variable font, which are deliberate because interpolation needs them.
 

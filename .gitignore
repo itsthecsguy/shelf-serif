@@ -4,3 +4,5 @@ __pycache__/
 .DS_Store
 build/
 sources/
+docs/video/*.mp4
+docs/video/*.m4a
