@@ -1,6 +1,6 @@
 # Shelf Serif
 
-https://github.com/user-attachments/assets/1d129170-6882-4928-81d4-56701448c3c2
+https://github.com/user-attachments/assets/26863264-9e40-4ba2-ad4e-041fdd69e0e2
 
 Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://grokbotshelf.com). Its bowls are rounded rectangles with flat sides, and its stems stand on thin slab serifs, the "shelves" in the name. Light is drawn to sit beside the GROK BOT SHELF wordmark.
 
@@ -344,10 +344,10 @@ To run Font Bakery and regenerate the README images, install the extra tools fir
 .venv/bin/python docs/make_images.py
 ```
 
-`docs/make_video.py` re-renders the launch video from the current fonts, using the same Playwright setup. It also needs ffmpeg with libx264. The soundtrack isn't in this repository, so pass a 22-second track of your own.
+`docs/make_video.py` re-renders the launch video from the current fonts, using the same Playwright setup. It also needs ffmpeg with libx264. The video is silent. To add sound, pass a 22-second track of your own with `--audio track.m4a`.
 
 ```bash
-.venv/bin/python docs/make_video.py --audio track.m4a
+.venv/bin/python docs/make_video.py
 ```
 
 The player at the top of this README plays a copy uploaded to GitHub, and the render itself isn't kept in the repository. After a new render, drag the MP4 into a GitHub comment box and put the URL it gives you at the top of this file.

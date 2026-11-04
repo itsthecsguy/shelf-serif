@@ -1,7 +1,8 @@
 """Render the launch video from the fonts in this repository. Needs ffmpeg with
-libx264. The soundtrack is not part of this repository, so pass your own.
+libx264. The video is silent unless you pass a soundtrack of your own.
 
     pip install playwright fonttools && playwright install chromium
+    python docs/make_video.py
     python docs/make_video.py --audio track.m4a
     python docs/make_video.py --stills 3.2,9.2,20.5 --out /tmp/stills
 """
@@ -105,9 +106,9 @@ def open_page(browser):
 
 
 def render_video(page, audio):
+    sound = ['-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'copy'] if audio else []
     cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', str(FPS), '-c:v', 'png', '-i', '-',
-           '-i', audio, '-map', '0:v', '-map', '1:a', '-c:a', 'copy',
-           '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', MP4]
+           *sound, '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', MP4]
     enc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     for frame in range(FRAMES):
         page.evaluate('t => render(t)', frame / FPS)
@@ -123,10 +124,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stills', help='comma-separated times in seconds; writes PNGs and skips the video')
     ap.add_argument('--out', default='.', help='folder for --stills')
-    ap.add_argument('--audio', help='soundtrack for the video, 22 seconds; copied into the MP4 as is')
+    ap.add_argument('--audio', help='optional soundtrack, 22 seconds; copied into the MP4 as is')
     args = ap.parse_args()
-    if not args.stills and not args.audio:
-        ap.error('--audio is required to render the video')
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = open_page(browser)
