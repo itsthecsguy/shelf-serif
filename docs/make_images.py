@@ -46,14 +46,6 @@ def bar(left, right):
     return f'<div class="bar tag"><span>{left}</span><span>{right}</span></div>'
 
 
-def hero():
-    return (bar('AN ORIGINAL TYPEFACE FOR GROK BOT SHELF', 'SIL OPEN FONT LICENSE') +
-            '<div style="font-size:236px;line-height:1.1;margin-top:48px;font-weight:300;white-space:nowrap">'
-            'Shelf Serif</div><hr>'
-            '<div style="font-size:64px;line-height:1.25;font-weight:700">Squared bowls. Hairline shelves.</div>'
-            '<div style="font-size:64px;line-height:1.25;font-weight:300">Five named weights, 300 to 700.</div>')
-
-
 def social():
     # GitHub's social preview is 1280 by 640. Upload it in the repository's settings.
     return ('<style>body { width: 1280px; height: 640px; padding: 56px 64px; display: flex; flex-direction: column; }'
@@ -156,7 +148,7 @@ def sizes():
 
 def main():
     chars = codepoints()
-    pages = {'hero': hero(), 'social-preview': social(), 'weights': weights(), 'features': features(), 'f-pairs': fpairs(),
+    pages = {'social-preview': social(), 'weights': weights(), 'features': features(), 'f-pairs': fpairs(),
              'symbols': symbols(), 'wordmark': wordmark(), 'sizes': sizes()}
     for name, w in FACES:
         pages[f'face-{name.lower()}'] = face(name, w)

@@ -32,6 +32,22 @@
 }
 @font-face {
   font-family: "Shelf Serif Static";
+  src: url("../fonts/woff2/ShelfSerif-Medium.woff2") format("woff2"),
+       url("../fonts/ttf/ShelfSerif-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Shelf Serif Static";
+  src: url("../fonts/woff2/ShelfSerif-SemiBold.woff2") format("woff2"),
+       url("../fonts/ttf/ShelfSerif-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Shelf Serif Static";
   src: url("../fonts/woff2/ShelfSerif-Bold.woff2") format("woff2"),
        url("../fonts/ttf/ShelfSerif-Bold.ttf") format("truetype");
   font-weight: 700;

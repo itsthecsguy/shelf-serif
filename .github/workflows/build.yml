@@ -1,0 +1,33 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Install tools
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements-dev.txt
+      - name: Build the fonts
+        run: ./build.sh
+      - name: Check the committed fonts match the source
+        run: |
+          git status --short -- fonts
+          test -z "$(git status --porcelain -- fonts)"
+      - name: Check outlines
+        run: .venv/bin/python generator/check_outlines.py
+      - name: Font Bakery
+        # One folder at a time, because the family checks treat every file
+        # passed together as one family.
+        run: |
+          .venv/bin/fontbakery check-universal --succinct -l WARN fonts/otf/*.otf
+          .venv/bin/fontbakery check-universal --succinct -l WARN fonts/ttf/*.ttf
+          .venv/bin/fontbakery check-universal --succinct -l WARN fonts/variable/*.ttf

@@ -6,6 +6,10 @@ units per em: every coordinate, advance, anchor and kerning value is
 multiplied by 2.048 and rounded to an integer here, so the compiled fonts
 have twice the coordinate resolution and integer-exact outlines.
 
+Medium and SemiBold are not drawn.  They are interpolated from the
+masters at 500 and 600, the same way the variable font makes them, and
+written next to the masters so build.sh compiles all five the same way.
+
 Usage:  python generator/build_ufo.py
 """
 from __future__ import annotations
@@ -16,6 +20,7 @@ import sys
 import ufoLib2
 from fontTools.designspaceLib import (AxisDescriptor, DesignSpaceDocument,
                                       InstanceDescriptor, SourceDescriptor)
+from ufo2ft.instantiator import Instantiator
 
 sys.path.insert(0, os.path.dirname(__file__))
 from glyphs import build_all  # noqa: E402
@@ -25,7 +30,7 @@ from spacing import kerning_for  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'sources')
 FAMILY = 'Shelf Serif'
-VERSION = (5, 0)
+VERSION = (5, 1)
 UPM = 2048
 S = UPM / 1000.0
 COPYRIGHT = 'Copyright 2026 thecsguy'
@@ -65,8 +70,21 @@ feature tnum {
 '''
 
 
+WEIGHTS = (('Light', 300), ('Regular', 400), ('Medium', 500), ('SemiBold', 600), ('Bold', 700))
+INTERPOLATED = ('Medium', 'SemiBold')
+
+
 def r(v):
     return int(round(v * S))
+
+
+def panose(wght):
+    # bWeight: 3 light, 5 book, 6 medium, 7 demi, 8 bold
+    return [2, 0, {300: 3, 400: 5, 500: 6, 600: 7, 700: 8}[wght], 4, 0, 0, 0, 0, 0, 0]
+
+
+def unique_id(name):
+    return f'{VERSION[0]}.{VERSION[1]:03d};TCSG;ShelfSerif-{name}'
 
 
 def draw(glyph, contours):
@@ -111,7 +129,7 @@ def make_ufo(P):
         'hairline shelf serifs, drawn parametrically for Grok Bot Shelf. '
         'The Light weight matches the GROK BOT SHELF wordmark.')
     info.openTypeNameVersion = 'Version %d.%03d' % VERSION
-    info.openTypeNameUniqueID = f'{VERSION[0]}.{VERSION[1]:03d};TCSG;ShelfSerif-{P.name}'
+    info.openTypeNameUniqueID = unique_id(P.name)
     info.openTypeNameSampleText = 'Grok Bot Shelf'
     info.openTypeNamePreferredFamilyName = FAMILY
     info.openTypeNamePreferredSubfamilyName = P.name
@@ -146,7 +164,7 @@ def make_ufo(P):
     info.postscriptOtherBlues = [r(P.desc - P.os), r(P.desc)]
     info.postscriptStemSnapH = [r(P.ser), r(P.H)]
     info.postscriptStemSnapV = [r(P.V)]
-    info.openTypeOS2Panose = [2, 0, {300: 3, 400: 5, 700: 8}.get(P.wght, 5), 4, 0, 0, 0, 0, 0, 0]
+    info.openTypeOS2Panose = panose(P.wght)
 
     glyphs = build_all(P, resolved=False)
     order = list(glyphs.keys())
@@ -218,8 +236,7 @@ def main():
         doc.addSource(s)
         print(f'wrote {path}: {len(glyphs)} glyphs')
 
-    for name, w in (('Light', 300), ('Regular', 400), ('Medium', 500),
-                    ('SemiBold', 600), ('Bold', 700)):
+    for name, w in WEIGHTS:
         i = InstanceDescriptor()
         i.familyName = FAMILY
         i.styleName = name
@@ -229,6 +246,15 @@ def main():
         i.postScriptFontName = f'ShelfSerif-{name}'
         i.styleMapFamilyName = FAMILY if name in ('Regular', 'Bold') else f'{FAMILY} {name}'
         i.styleMapStyleName = 'bold' if name == 'Bold' else 'regular'
+        # The instantiator copies Regular's info and leaves these blank, so
+        # set them here the way make_ufo sets them on the masters.
+        i.lib['public.fontInfo'] = {
+            'openTypeNamePreferredFamilyName': FAMILY,
+            'openTypeNamePreferredSubfamilyName': name,
+            'openTypeNameUniqueID': unique_id(name),
+            'postscriptFullName': f'{FAMILY} {name}',
+            'openTypeOS2Panose': panose(w),
+        }
         doc.addInstance(i)
 
     ds = os.path.join(SRC, 'ShelfSerif.designspace')
@@ -242,6 +268,13 @@ def main():
             print(' ', n, sigs)
         sys.exit(1)
     print('masters are interpolation-compatible')
+
+    inst = Instantiator.from_designspace(doc)
+    for i in doc.instances:
+        if i.styleName in INTERPOLATED:
+            path = os.path.join(SRC, f'ShelfSerif-{i.styleName}.ufo')
+            inst.generate_instance(i).save(path, overwrite=True)
+            print('wrote', path, '(interpolated)')
 
 
 if __name__ == '__main__':

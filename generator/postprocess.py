@@ -1,7 +1,7 @@
 """Post-build.
 
 * static TTFs: drop sub-unit duplicate points left by the cubic-to-
-  quadratic conversion, autohint with ttfautohint (hinting range 8 to 64
+  quadratic conversion and points in the middle of a straight line, autohint with ttfautohint (hinting range 8 to 64
   px, Latin, no version-string note), set head.flags bit 3 (integer ppem)
 * variable TTF: OVERLAP_SIMPLE flags; gasp for grayscale + symmetric
   smoothing at every size; a prep program with smart dropout control; an
@@ -15,11 +15,15 @@ from __future__ import annotations
 
 import glob
 import os
+import sys
 
 from fontTools.otlLib.builder import buildStatTable
 from fontTools.ttLib import TTFont, newTable
 from fontTools.ttLib.tables import ttProgram
 from ttfautohint import ttfautohint
+
+sys.path.insert(0, os.path.dirname(__file__))
+from build_ufo import VERSION, WEIGHTS  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONTS = os.path.join(ROOT, 'fonts')
@@ -29,7 +33,8 @@ OTF, TTF, VAR, WOFF2 = (os.path.join(FONTS, d) for d in ('otf', 'ttf', 'variable
 def clean_tiny_segments(path, tol=1.0):
     """Remove an on-curve point that sits within `tol` units of the
     previous on-curve point (cu2qu + integer rounding can leave two such
-    points at a contour's start).  Static TTFs only."""
+    points at a contour's start), and an on-curve point that lies on the
+    straight line between its neighbours.  Static TTFs only."""
     f = TTFont(path)
     glyf = f['glyf']
     removed = 0
@@ -63,6 +68,27 @@ def clean_tiny_segments(path, tol=1.0):
             if n > 3 and len(kept) > 1 and flags[kept[0]] & 1 and flags[kept[-1]] & 1 \
                     and close(kept[0], kept[-1]):
                 keep[kept[-1]] = False
+            # 5.001: drop an on-curve point that sits exactly on the straight
+            # line between two on-curve neighbours.  skia-pathops leaves such
+            # a point on some CPUs and not others (one in the Bold and
+            # SemiBold eth on arm64, none on x86-64), so removing them makes
+            # the build give the same bytes everywhere.
+            ring = [i for i in kept if keep[i]]
+            changed = True
+            while changed and len(ring) > 3:
+                changed = False
+                for k, i in enumerate(ring):
+                    a, c = ring[k - 1], ring[(k + 1) % len(ring)]
+                    if not (flags[a] & 1 and flags[i] & 1 and flags[c] & 1):
+                        continue
+                    (ax, ay), (bx, by), (cx, cy) = coords[a], coords[i], coords[c]
+                    cross = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+                    dot = (bx - ax) * (cx - bx) + (by - ay) * (cy - by)
+                    if cross == 0 and dot > 0:
+                        keep[i] = False
+                        ring.pop(k)
+                        changed = True
+                        break
             start = end + 1
         if all(keep):
             continue
@@ -187,8 +213,8 @@ def verify(path):
           f'tables={"STAT" in f and "avar" in f and "gasp" in f}')
     assert cr and cr.startswith('Copyright 2026 thecsguy'), cr
     assert lic and 'SIL Open Font License' in lic, lic
-    assert ver == 'Version 5.000', ver
-    assert abs(head.fontRevision - 5.0) < 1e-3, head.fontRevision
+    assert ver == 'Version %d.%03d' % VERSION, ver
+    assert abs(head.fontRevision - (VERSION[0] + VERSION[1] / 1000)) < 1e-3, head.fontRevision
     assert head.unitsPerEm == 2048
     for tag in ('kern', 'mark', 'pnum', 'tnum', 'ccmp'):
         assert tag in feats, (path, tag)
@@ -210,7 +236,7 @@ def main():
     for path in sorted(glob.glob(os.path.join(TTF, '*.ttf'))):
         n = clean_tiny_segments(path)
         if n:
-            print(f'  {os.path.basename(path)}: removed {n} sub-unit duplicate points')
+            print(f'  {os.path.basename(path)}: removed {n} redundant points')
         autohint(path)
         set_integer_ppem_flag(path)
     os.makedirs(WOFF2, exist_ok=True)
@@ -223,6 +249,9 @@ def main():
         for path in sorted(glob.glob(os.path.join(d, '*'))):
             counts.add(verify(path))
     assert len(counts) == 1, counts
+    for d, ext in ((OTF, 'otf'), (TTF, 'ttf'), (WOFF2, 'woff2')):
+        for name, _ in WEIGHTS:
+            assert os.path.exists(os.path.join(d, f'ShelfSerif-{name}.{ext}')), (d, name)
     print(f'  all files carry {counts.pop()} glyphs')
 
 

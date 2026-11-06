@@ -5,11 +5,11 @@ https://github.com/user-attachments/assets/26863264-9e40-4ba2-ad4e-041fdd69e0e2
 Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://grokbotshelf.com). Its bowls are rounded rectangles with flat sides, and its stems stand on thin slab serifs, the "shelves" in the name. Light is drawn to sit beside the GROK BOT SHELF wordmark.
 
 - Five named weights, from 300 to 700, in one variable font.
-- Static OTF and hinted TTF files for Light, Regular and Bold.
+- Static OTF and hinted TTF files for all five weights.
 - 244 glyphs covering Basic Latin, Latin-1 and Windows-1252 punctuation.
 - Free for personal and commercial use under the [SIL Open Font License 1.1](OFL.txt).
 
-Current version is 5.000.
+Current version is 5.001. See the [changelog](CHANGELOG.md).
 
 ![The five weights](docs/images/weights.png)
 
@@ -28,9 +28,9 @@ Current version is 5.000.
 
 ## Install on your computer
 
-[Download ShelfSerif-5.000.zip](https://github.com/itsthecsguy/shelf-serif/releases/download/v5.000/ShelfSerif-5.000.zip) from the [5.000 release](https://github.com/itsthecsguy/shelf-serif/releases/tag/v5.000), unpack it and open the `fonts` folder. The ZIP holds the fonts, the stylesheet and the license.
+[Download ShelfSerif-5.001.zip](https://github.com/itsthecsguy/shelf-serif/releases/download/v5.001/ShelfSerif-5.001.zip) from the [5.001 release](https://github.com/itsthecsguy/shelf-serif/releases/tag/v5.001), unpack it and open the `fonts` folder. The ZIP holds the fonts, the stylesheet and the license.
 
-**Which file should you install?** Use `fonts/variable/ShelfSerif[wght].ttf` if your app supports variable fonts, because it holds all five weights. Otherwise install the three static files for your platform. Medium and SemiBold exist only in the variable font.
+**Which file should you install?** Use `fonts/variable/ShelfSerif[wght].ttf` if your app supports variable fonts, because it holds all five weights. Otherwise install the five static files for your platform.
 
 Don't install the static and variable files together, since they share a family name and apps can pick the wrong one.
 
@@ -65,7 +65,7 @@ Figma's desktop app, Adobe apps and Sketch use the fonts installed on your syste
 The quickest way to try it is one line of HTML, served by jsDelivr from this repository.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@v5.000/css/shelf-serif.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@v5.001/css/shelf-serif.css">
 
 <style>
   body { font-family: var(--font-shelf-serif); font-weight: 400; }
@@ -102,7 +102,7 @@ body {
 | Name | What it does |
 | --- | --- |
 | `"Shelf Serif"` | The variable font, any `font-weight` from 300 to 700 |
-| `"Shelf Serif Static"` | Static Light (300), Regular (400) and Bold (700), for browsers without variable font support |
+| `"Shelf Serif Static"` | The five static weights, 300 to 700, for browsers without variable font support |
 | `--font-shelf-serif` | The full stack, `"Shelf Serif", "Shelf Serif Static", Georgia, serif` |
 | `.shelf-caps` | The wide-tracked capitals of the wordmark, in Light. Add `.regular` or `.bold` for the other weights |
 | `.shelf-pnum` | Proportional figures, for numbers in running text |
@@ -162,11 +162,11 @@ With Tailwind v4, add the family to your theme and use the `font-shelf` class.
 | --- | --- | --- | --- | --- | --- |
 | Light | 300 | 110 | 94 | Yes | Yes |
 | Regular | 400 | 142 | 121 | Yes | Yes |
-| Medium | 500 | interpolated | interpolated | No | Yes |
-| SemiBold | 600 | interpolated | interpolated | No | Yes |
+| Medium | 500 | interpolated | interpolated | Yes | Yes |
+| SemiBold | 600 | interpolated | interpolated | Yes | Yes |
 | Bold | 700 | 190 | 140, with a 104 middle stroke in stacked letters | Yes | Yes |
 
-The variable font accepts any weight between 300 and 700, not just these five.
+The variable font accepts any weight between 300 and 700, not just these five. The static Medium and SemiBold are interpolated from the Light, Regular and Bold masters, the same way the variable font makes them, so they match it.
 
 ### Light, 300
 
@@ -265,14 +265,15 @@ The charts below show each face's 221 visible characters. They leave out the spa
 | Path | Contents | Size each |
 | --- | --- | --- |
 | `fonts/variable/ShelfSerif[wght].ttf` | Variable TrueType, `wght` 300 to 700, unhinted | 70 KB |
-| `fonts/otf/ShelfSerif-{Light,Regular,Bold}.otf` | Static CFF | 20 KB |
-| `fonts/ttf/ShelfSerif-{Light,Regular,Bold}.ttf` | Static TrueType, hinted with ttfautohint | 50 KB |
+| `fonts/otf/ShelfSerif-{Light,Regular,Medium,SemiBold,Bold}.otf` | Static CFF | 20 KB |
+| `fonts/ttf/ShelfSerif-{Light,Regular,Medium,SemiBold,Bold}.ttf` | Static TrueType, hinted with ttfautohint | 50 KB |
 | `fonts/woff2/ShelfSerif[wght].woff2` | Variable font for the web | 26 KB |
-| `fonts/woff2/ShelfSerif-{Light,Regular,Bold}.woff2` | Static fonts for the web | 18 KB |
+| `fonts/woff2/ShelfSerif-{Light,Regular,Medium,SemiBold,Bold}.woff2` | Static fonts for the web | 18 KB |
 | `css/shelf-serif.css` | `@font-face` rules and the helper classes | |
 | `generator/` | The Python that draws and checks every glyph | |
 | `docs/make_images.py` | Renders the images in this README and the repository's social preview | |
 | `docs/make_video.py`, `docs/video/` | Renders the launch video at the top of this README | |
+| `CHANGELOG.md` | What changed in each version | |
 
 ## Design details
 
@@ -304,7 +305,7 @@ Nothing in the font was traced or imported. Every outline is built by the code i
 
 ## Build from source
 
-The fonts are generated, so a design change means editing the code and rebuilding. `build.sh` uses zsh, which macOS includes. The fonts here were built with Python 3.14.
+The fonts are generated, so a design change means editing the code and rebuilding. `build.sh` runs in bash on macOS and Linux. The fonts here were built with Python 3.14.
 
 ```bash
 git clone https://github.com/itsthecsguy/shelf-serif.git
@@ -314,7 +315,11 @@ python3 -m venv .venv
 ./build.sh
 ```
 
-`build.sh` replaces everything in `fonts/`. It writes UFO masters to `sources/` (not committed), compiles them with fontmake, then hints the static TTFs, finishes the variable font and writes WOFF2.
+`build.sh` replaces everything in `fonts/`. It writes UFO masters to `sources/` (not committed) and interpolates Medium and SemiBold from them. It compiles all five with fontmake, then hints the static TTFs, finishes the variable font and writes WOFF2.
+
+The build is reproducible. `build.sh` sets `SOURCE_DATE_EPOCH` to the release date, so the timestamps in every font are fixed and the same source gives the same bytes on macOS and Linux. Move that date forward when you make a release.
+
+On every push and pull request, a [GitHub Actions workflow](.github/workflows/build.yml) rebuilds the fonts, fails if they differ from the committed files, and runs Font Bakery's universal profile.
 
 | File | Purpose |
 | --- | --- |
@@ -335,10 +340,10 @@ To run the checks:
 .venv/bin/python generator/check_spacing.py
 ```
 
-To run Font Bakery and regenerate the README images, install the extra tools first.
+To run Font Bakery and regenerate the README images, install the extra tools first. `requirements-dev.txt` pins them along with the build tools.
 
 ```bash
-.venv/bin/pip install fontbakery playwright
+.venv/bin/pip install -r requirements-dev.txt
 .venv/bin/playwright install chromium
 .venv/bin/fontbakery check-universal fonts/otf/*.otf
 .venv/bin/python docs/make_images.py
@@ -352,7 +357,7 @@ To run Font Bakery and regenerate the README images, install the extra tools fir
 
 The player at the top of this README plays a copy uploaded to GitHub, and the render itself isn't kept in the repository. After a new render, drag the MP4 into a GitHub comment box and put the URL it gives you at the top of this file.
 
-Font Bakery's universal profile reports 0 failures for the OTF, TTF and variable files. Its only warning is for overlapping paths in the variable font, which are deliberate because interpolation needs them.
+Font Bakery's universal profile reports 0 failures for the OTF, TTF and variable files, checked one folder at a time. Its only warning is for overlapping paths in the variable font, which are deliberate because interpolation needs them.
 
 ## License
 
