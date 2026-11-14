@@ -11,8 +11,8 @@ cd "$(dirname "$0")"
 VENV=${VENV:-.venv}
 # Every font's head.created and head.modified come from this date, so the
 # same source builds the same bytes.  Move it forward with each release.
-# 1793750400 is 2026-11-04 00:00 UTC, the 5.001 release.
-export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-1793750400}
+# 1794614400 is 2026-11-14 00:00 UTC, the 5.002 release.
+export SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-1794614400}
 PY=$VENV/bin/python
 FM=$VENV/bin/fontmake
 

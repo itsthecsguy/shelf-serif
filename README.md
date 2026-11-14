@@ -9,7 +9,7 @@ Shelf Serif is a near-monoline, squared serif made for [Grok Bot Shelf](https://
 - 244 glyphs covering Basic Latin, Latin-1 and Windows-1252 punctuation.
 - Free for personal and commercial use under the [SIL Open Font License 1.1](OFL.txt).
 
-Current version is 5.001. See the [changelog](CHANGELOG.md).
+Current version is 5.002. See the [changelog](CHANGELOG.md).
 
 ![The five weights](docs/images/weights.png)
 
@@ -28,7 +28,7 @@ Current version is 5.001. See the [changelog](CHANGELOG.md).
 
 ## Install on your computer
 
-[Download ShelfSerif-5.001.zip](https://github.com/itsthecsguy/shelf-serif/releases/download/v5.001/ShelfSerif-5.001.zip) from the [5.001 release](https://github.com/itsthecsguy/shelf-serif/releases/tag/v5.001), unpack it and open the `fonts` folder. The ZIP holds the fonts, the stylesheet and the license.
+[Download ShelfSerif-5.002.zip](https://github.com/itsthecsguy/shelf-serif/releases/download/v5.002/ShelfSerif-5.002.zip) from the [5.002 release](https://github.com/itsthecsguy/shelf-serif/releases/tag/v5.002), unpack it and open the `fonts` folder. The ZIP holds the fonts, the stylesheet and the license.
 
 **Which file should you install?** Use `fonts/variable/ShelfSerif[wght].ttf` if your app supports variable fonts, because it holds all five weights. Otherwise install the five static files for your platform.
 
@@ -65,7 +65,7 @@ Figma's desktop app, Adobe apps and Sketch use the fonts installed on your syste
 The quickest way to try it is one line of HTML, served by jsDelivr from this repository.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@v5.001/css/shelf-serif.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/itsthecsguy/shelf-serif@v5.002/css/shelf-serif.css">
 
 <style>
   body { font-family: var(--font-shelf-serif); font-weight: 400; }

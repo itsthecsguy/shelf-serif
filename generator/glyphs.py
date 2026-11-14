@@ -385,9 +385,18 @@ def g_Q(P):
     x0 = P.sb_round
     w = ow(P, 583)
     x1 = x0 + w
+    # 5.002: the tail starts inside the bottom stroke.  It used to start
+    # at y = 130 in every weight, which poked a nub into the counter in
+    # Light and Regular and not in Bold.  Same line, shorter start.
+    pa, pb = (x1 - P.rc * 1.1, 130), (x1 + 20, -130)
+    ys = min(130, P.H - P.os - 12)
+    t = (130 - ys) / 260
+    ps = (pa[0] + t * (pb[0] - pa[0]), ys)
     b.add(ring(x0, -P.os, x1, P.cap + P.os, P.rc, P.V, P.H, P.ri_min),
-          diag((x1 - P.rc * 1.1, 130), (x1 + 20, -130), P.Vd))
-    return b.finish('Q', P.sb_round)
+          diag(ps, pb, P.Vd))
+    # the advance ends at the tail's tip instead of a full sidebearing
+    # past it, so Q no longer leaves a hole before the next letter
+    return b.finish('Q', 0)
 
 
 def g_S(P):
@@ -1005,16 +1014,22 @@ def g_three(P, prop=False):
 
 
 def g_four(P, prop=False):
+    """5.002: Bold gives back some stem, as the a, e, k and 8 do.  Its
+    stem moves right, the diagonal thins and the bar takes the waist
+    thickness, which opens a counter that had closed to 3 units."""
     b = B(P)
+    dv = P.relief * P.scale
     w = ccw(P, 260) + 2 * P.V
     x0, x1 = 0, w
-    xs = x1 - P.V - 52
+    xs = x1 - P.V - 52 + 0.4 * dv
     yb = P.cap * 0.27
-    top = (xs + P.V / 2, P.cap)
-    hx = _hx(P, top[0] - x0, P.cap - yb)
+    wd = P.Vd - 0.45 * dv
+    # the thinner diagonal still has to pass the stem's top-left corner
+    top = (xs + P.V / 2 - 0.35 * dv, P.cap)
+    hx = _hx(P, top[0] - x0, P.cap - yb, wd)
     for _ in range(3):
-        hx = _hx(P, top[0] - (x0 + hx), P.cap - yb)
-    b.add(stem(P, xs, 0, P.cap), bar(P, x0, x1, yb), diag((x0 + hx, yb), top, P.Vd),
+        hx = _hx(P, top[0] - (x0 + hx), P.cap - yb, wd)
+    b.add(stem(P, xs, 0, P.cap), bar(P, x0, x1, yb, P.Hw), diag((x0 + hx, yb), top, wd),
           serif(P, xs, 0, 'bottom', 'both'))
     return fig_finish(b, 'four', P, prop, 26, P.sb_bar)
 
@@ -1362,8 +1377,10 @@ def g_at(P):
     ya0 = (y0 + P.H + y1 - P.H) / 2 - inner_h / 2
     ya1 = ya0 + inner_h
     b.add(arc(x0, y0, x1, y1, r, P.V, P.H, ('y', safe_y(P, y0, y1, r, ya), 'right'), ('x', xa1 + 2, 'bottom'), P.ri_min),
-          ring(xa0, ya0, xa1, ya1, P.rx * 0.9, vi, hi, P.ri_min),
-          rect(xa1 - vi, y0 + P.H - 4, xa1, ya1 - 10, P.rs))
+          # 5.002: the ring's right corners are square and the stem runs to
+          # its top; the stem's corner used to stick out past a round one
+          ring(xa0, ya0, xa1, ya1, (P.rs, P.rx * 0.9, P.rx * 0.9, P.rs), vi, hi, P.ri_min),
+          rect(xa1 - vi, y0 + P.H - 4, xa1, ya1, P.rs))
     return b.finish('at', P.sb_round)
 
 

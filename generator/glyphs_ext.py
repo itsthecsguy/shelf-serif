@@ -119,20 +119,26 @@ def m_caron(P):
     return mirror_y(cs, (y0 + y1) / 2)
 
 
+def _wave(x_l, x_r, y_lo, y_hi, t, arm):
+    """Squared tilde between x_l and x_r: a high bar on the left with a
+    short tick down at its end, a falling stroke, and a low bar on the
+    right with a tick up.  5.002: it used to rise from left to right with
+    no ticks, which read as an acute."""
+    xa, xb = x_l + arm, x_r - arm
+    tick = 0.55 * t
+    return [rect(x_l, y_hi, xa + 2, y_hi + t, 0),
+            diag((xa, y_hi + t / 2), (xb, y_lo + t / 2), t, 'vert', 'vert'),
+            rect(xb - 2, y_lo, x_r, y_lo + t, 0),
+            rect(x_l, y_hi - tick, x_l + t, y_hi + 2, 0),
+            rect(x_r - t, y_lo + t - 2, x_r, y_lo + t + tick, 0)]
+
+
 def m_tilde(P):
-    """Squared tilde: a low bar on the left, a rising stroke, a high bar on
-    the right, all one hairline-free stroke thick."""
     t = P.H * 0.70
     h = acc_h(P) * 1.32
     half = 122 + 0.3 * (P.V - V_L)
-    arm = 40 + 0.1 * (P.V - V_L)
-    y_lo = GAP
-    y_hi = GAP + h - t
-    xa = -half + arm          # end of the left bar / start of the rise
-    xb = half - arm
-    return [rect(-half, y_lo, xa + 2, y_lo + t, 0),
-            diag((xa, y_lo + t / 2), (xb, y_hi + t / 2), t, 'vert', 'vert'),
-            rect(xb - 2, y_hi, half, y_hi + t, 0)]
+    arm = 64 + 0.1 * (P.V - V_L)
+    return _wave(-half, half, GAP, GAP + h - t, t, arm)
 
 
 def m_dieresis(P):
@@ -407,7 +413,9 @@ def g_eth(P):
     top = P.asc * 0.93
     b.add(ring(x0, -P.os, x1, P.xh + P.os, P.rx, P.V, P.H, P.ri_min),
           stem(P, xs, P.xh / 2, top),
-          diag((xs - 96 - 0.2 * (P.V - V_L), top - 150), (x1 + 50, top - 20), P.Vd * 0.9))
+          # 5.002: a short, thin cross stroke.  The old one was nearly a
+          # full diagonal stem and turned into a flag in Bold.
+          diag((xs - 70, top - 150), (x1 + 44, top - 66), P.Hw * 0.75, 'vert', 'vert'))
     return b.finish('eth', P.sb_round)
 
 
@@ -432,26 +440,29 @@ def g_thorn(P):
 
 
 def g_germandbls(P):
-    """Eszett: a stem with a squared hook over the top, the hook's right
-    side dropping to a waist near the x-height, and a lower bowl that
-    bulges out and comes back to a plumb terminal just right of the stem."""
+    """Eszett: a stem that rounds over into an upper bowl, a waist bar
+    that stops short of the stem, and a wider lower bowl that comes back
+    to a plumb terminal just right of the stem.  5.002: redrawn; the old
+    one closed its hook with a slanted cut and left a sliver between the
+    stem and the lower bowl."""
     b = B(P)
     xs = P.sb_stem
-    wt = max(2 * P.V + cw(P, 80), 2 * P.V + 70)       # top hook width
-    wb = wt + 60 + 0.2 * (P.V - V_L)                  # lower bowl width
-    yw = P.xh * 0.90                                   # waist
-    yh0 = yw - P.H - 10
-    rt = half_bowl_radius(P, P.rx * 0.85, P.asc + P.os - yh0)
-    rl = half_bowl_radius(P, P.rx * 0.85, yw + P.H + P.os)
-    xb0 = xs + 30
-    xB = xs + wt - P.V + 4
-    xt = xs + P.V + 50
-    b.add(stem(P, xs, 0, yh0 + 30),
-          arc(xs, yh0, xs + wt, P.asc + P.os, (rt, rt, 0, 0), P.V, P.H,
-              ('y', yw, 'right'), ('y', yh0 + 12, 'left'), P.ri_min),
-          arc(xb0, -P.os, xs + wb, yw + P.H, (rl, 0, rl, rl), P.V, P.H,
-              ('x', xt, 'bottom'), ('x', xB, 'top'), P.ri_min),
-          lserif(P, xs, 0, 'bottom', 'both'))
+    cu = cw(P, 150)                         # upper counter width
+    gap = 0.32 * cu                         # stem face to the waist bar's end
+    xu = xs + 2 * P.V + cu                  # right side of the upper bowl
+    xl = xu + 30                            # right side of the lower bowl
+    yw = P.asc * 0.55                       # waist centre
+    yb = yw - P.Hw / 2
+    ru = half_bowl_radius(P, P.rx * 0.85, P.asc + P.os - yb)
+    rl = half_bowl_radius(P, P.rx * 0.85, yw + P.Hw / 2 + P.os)
+    xj = xs + P.V + gap
+    ycut = yb + P.Hw + 30
+    b.add(arc(xs, yb, xu, P.asc + P.os, (ru, ru, 0, ru), P.V, (P.H, P.Hw),
+              ('x', xj, 'bottom'), ('y', ycut, 'left'), P.ri_min),
+          stem(P, xs, 0, ycut + 20),
+          arc(xj - P.V - 10, -P.os, xl, yw + P.Hw / 2, (rl, 0, 0, rl), P.V, (P.Hw, P.H),
+              ('x', xj + 10, 'bottom'), ('x', xj, 'top'), P.ri_min),
+          lserif(P, xs, 0, 'bottom', 'left'))
     return b.finish('germandbls', P.sb_round)
 
 
@@ -731,8 +742,8 @@ def g_greater(P):
 def g_guillemotleft(P):
     b = B(P)
     cy = P.xh * 0.5
-    hw, hh = 104 + 0.4 * (P.V - V_L), 112
-    w = P.Vd * 0.86
+    hw, hh = 104 + 0.4 * (P.V - V_L), 130
+    w = P.H * 0.72          # 5.002: thinner and taller, so the notch stays open in Bold
     x0 = 36
     cs = chevron(P, x0, cy, hw, hh, w, True)
     cx0, _, cx1, _ = bbox(cs)
@@ -749,7 +760,7 @@ def g_guillemotright(P):
 def g_guilsinglleft(P):
     b = B(P)
     cy = P.xh * 0.5
-    b.add(chevron(P, 36, cy, 104 + 0.4 * (P.V - V_L), 112, P.Vd * 0.86, True))
+    b.add(chevron(P, 36, cy, 104 + 0.4 * (P.V - V_L), 130, P.H * 0.72, True))
     return b.finish('guilsinglleft', 36)
 
 
@@ -781,23 +792,24 @@ def g_asciitilde(P):
     arm = 80
     rise = 74 + 0.2 * (P.V - V_L)
     y_lo, y_hi = cy - rise / 2 - t / 2, cy + rise / 2 - t / 2
-    xa, xb = -half + arm, half - arm
-    cs = [rect(-half, y_lo, xa + 2, y_lo + t, 0),
-          diag((xa, y_lo + t / 2), (xb, y_hi + t / 2), t, 'vert', 'vert'),
-          rect(xb - 2, y_hi, half, y_hi + t, 0)]
+    cs = _wave(-half, half, y_lo, y_hi, t, arm + 30)
     b.add(translate(cs, P.sb_bar + half, 0))
     return b.finish('asciitilde', P.sb_bar)
 
 
 def g_braceleft(P):
-    """Squared brace: a bracket whose stem carries a short tick to the
-    left at the middle."""
+    """Squared brace: a stem that rounds into a short arm at the top and
+    the bottom, with a tick to the left at the middle.  5.002: the arms
+    used to meet the stem in square corners, which made the brace a
+    bracket with a tick."""
     b = B(P)
     x0 = P.sb_term + 70
     bw = cw(P, 150) + P.V
     ym = (P.asc + P.desc) / 2
-    b.add(stem(P, x0, P.desc - 10, P.asc + 10),
-          bar(P, x0, x0 + bw, P.asc + 10 - P.H), bar(P, x0, x0 + bw, P.desc - 10),
+    r = min(P.rx * 1.1, bw - P.V * 0.45)
+    xe = x0 + bw
+    b.add(arc(x0, P.desc - 10, x0 + 3 * bw, P.asc + 10, (0, r, r, 0), P.V, P.H,
+              ('x', xe, 'top'), ('x', xe, 'bottom'), P.ri_min),
           rect(x0 - 70, ym - P.H / 2, x0 + 4, ym + P.H / 2, P.rs))
     return b.finish('braceleft', 30)
 
@@ -915,24 +927,30 @@ def g_perthousand(P):
 
 
 def g_section(P):
-    """Two S-like hooks sharing a middle ring."""
+    """Section sign: a ring in the middle, an S hook above it that shares
+    the ring's top stroke and left side, and the same hook turned half a
+    turn below.  5.002: redrawn with the thinner waist stroke on all four
+    horizontals and three equal counters; the old hooks overlapped the
+    ring and filled in."""
     b = B(P)
     x0 = P.sb_term
-    w = ow(P, 470)
-    x1 = x0 + w
+    x1 = x0 + ow(P, 470)
     cx = (x0 + x1) / 2
-    top, bot = P.cap + 10, -70
-    H2 = (top + bot) / 2
-    hh = (top - bot) * 0.46                      # height of each hook
-    r = half_bowl_radius(P, P.rc * 0.8, hh)
-    yt = safe_y(P, top - hh, top, r, top - hh * 0.72)
-    upper = arc(x0, top - hh, x1, top, r, P.V, P.H,
-                ('y', yt, 'right'), ('x', cx + 40, 'bottom'), P.ri_min)
-    lower = rotate180([upper], cx, H2)[0]
-    rh = max((top - bot) * 0.40, 2 * P.H + 70)
-    rr = half_bowl_radius(P, P.rc * 0.8, rh)
-    b.add(upper, lower,
-          ring(x0 + 22, H2 - rh / 2, x1 - 22, H2 + rh / 2, rr, P.V, P.H, P.ri_min))
+    top, bot = P.cap + P.os, -150
+    mid = (top + bot) / 2
+    h = P.Hw
+    c = (top - bot - 4 * h) / 3              # counter height
+    y2 = top - h - c                         # ring top
+    y1 = bot + h + c                         # ring bottom
+    r = half_bowl_radius(P, P.rc * 0.7, top - (y2 - h))
+    yt = safe_y(P, y2 - h, top, r, top - h - c * 0.4, h)
+    # the hooks stop 36 short of the ring on their terminal side, the way
+    # the S's upper half is inset
+    upper = arc(x0, y2 - h, x1 - 36, top, (r, r, 0, 0), P.V, h,
+                ('y', yt, 'right'), ('x', cx, 'bottom'), P.ri_min)
+    lower = rotate180([upper], cx, mid)[0]
+    rr = half_bowl_radius(P, P.rc * 0.7, y2 - y1)
+    b.add(upper, lower, ring(x0, y1, x1, y2, rr, P.V, h, P.ri_min))
     return b.finish('section', P.sb_term)
 
 

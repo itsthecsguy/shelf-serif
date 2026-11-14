@@ -90,6 +90,9 @@ PAIRS = {
     ('Y', 'ae'): -56, ('Y', 'oe'): -60, ('V', 'oe'): -42,
     ('Thorn', 'A'): -30, ('Thorn', 'period'): -60, ('Thorn', 'comma'): -60,
     ('AE', 'J'): -8, ('Eth', 'J'): -8,
+    # 5.002: the Q's advance now ends at its tail, so keep the tail off
+    # the j hook and the underscore
+    ('Q', 'j'): 60, ('Q', 'underscore'): 24, ('section', 'j'): 24,
 }
 
 

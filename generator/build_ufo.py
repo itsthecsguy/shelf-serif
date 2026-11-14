@@ -30,7 +30,7 @@ from spacing import kerning_for  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'sources')
 FAMILY = 'Shelf Serif'
-VERSION = (5, 1)
+VERSION = (5, 2)
 UPM = 2048
 S = UPM / 1000.0
 COPYRIGHT = 'Copyright 2026 thecsguy'
