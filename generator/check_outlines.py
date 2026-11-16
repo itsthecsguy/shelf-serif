@@ -14,8 +14,13 @@ outlines) this checks:
               join is a kink rather than a clean corner or a smooth joint
   near-axis   straight lines within 1 degree of vertical or horizontal
               that are not exactly so (rounding slop)
-  overlaps    the static fonts must have no self-intersecting contours
-              (checked by re-running a union and comparing the area)
+  counters    in the overlap-free static fonts, every counter (a contour
+              nested an odd number of levels deep) is at least
+              MIN_COUNTER units thick, measured as 2 * area / perimeter.
+              This catches counters that fill in, such as the 5.001 Bold 4
+              (11 units) and the slivers in the Bold fractions (1 unit).
+              KNOWN_SMALL_COUNTERS lists the glyphs that are already under
+              the limit, each with the floor it must not drop below.
 
 Usage:  python generator/check_outlines.py [font files...]
 Exit status 1 if anything fails.
@@ -34,6 +39,14 @@ from fontTools.ttLib import TTFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOL = 1.0          # font units (2048 upm)
 KINK_MIN, KINK_MAX = 0.6, 12.0   # degrees
+MIN_COUNTER = 24   # font units (2048 upm), about 12 on the 1000-unit grid
+# Counters that were already under MIN_COUNTER when the check was added,
+# with the thinnest each may get.  Redrawing one of these should raise it
+# above MIN_COUNTER, and then the entry can go.
+#   AE: the A's counter is a sliver between the diagonal and the E's stem
+#       (13 units in Bold, 22 in Regular).
+#   onequarter, threequarters: the small 4's counter (19 units in Regular).
+KNOWN_SMALL_COUNTERS = {'AE': 12, 'onequarter': 18, 'threequarters': 18}
 
 
 class ContourPen(BasePen):
@@ -166,6 +179,21 @@ def angle_between(u, v):
     return math.degrees(math.acos(max(-1.0, min(1.0, c))))
 
 
+def perimeter(contour):
+    total = 0.0
+    for seg in contour:
+        pts = seg_points(seg)
+        total += sum(math.dist(p, q) for p, q in zip(pts, pts[1:]))
+    return total
+
+
+def counter_thickness(contour, area):
+    """Mean thickness of a counter, 2 * area / perimeter: the width of a
+    long thin sliver, half the side of a square."""
+    per = perimeter(contour)
+    return 2 * abs(area) / per if per else 0.0
+
+
 def check_glyph(name, contours, is_cff, allow_overlap):
     probs = []
     if not contours:
@@ -188,6 +216,11 @@ def check_glyph(name, contours, is_cff, allow_overlap):
         want_ccw = outer if is_cff else not outer
         if ccw != want_ccw and not allow_overlap:
             probs.append(f'{name}: contour {i} (depth {depth}) runs {"ccw" if ccw else "cw"}')
+        if not outer and not allow_overlap:
+            t = counter_thickness(c, areas[i])
+            floor = KNOWN_SMALL_COUNTERS.get(name, MIN_COUNTER)
+            if t < min(floor, MIN_COUNTER):
+                probs.append(f'{name}: counter {i} is {t:.0f} units thick, under {min(floor, MIN_COUNTER)}')
         for k, seg in enumerate(c):
             p0, p1 = seg[1], seg[-1]
             if math.hypot(p1[0] - p0[0], p1[1] - p0[1]) < TOL:
@@ -207,24 +240,34 @@ def check_glyph(name, contours, is_cff, allow_overlap):
     return probs
 
 
+def default_paths():
+    return sorted(glob.glob(os.path.join(ROOT, 'fonts', 'otf', '*.otf'))
+                  + glob.glob(os.path.join(ROOT, 'fonts', 'ttf', '*.ttf'))
+                  + glob.glob(os.path.join(ROOT, 'fonts', 'variable', '*.ttf')))
+
+
+def check_font(path):
+    """Return (number of drawn glyphs, list of problems) for one font."""
+    f = TTFont(path)
+    is_cff = 'CFF ' in f
+    is_var = 'fvar' in f
+    gs = f.getGlyphSet()
+    probs = []
+    nglyphs = 0
+    for name in f.getGlyphOrder():
+        pen = ContourPen(gs)
+        gs[name].draw(pen)
+        if pen.contours:
+            nglyphs += 1
+        probs += check_glyph(name, pen.contours, is_cff, allow_overlap=is_var)
+    return nglyphs, probs
+
+
 def main():
-    paths = sys.argv[1:] or sorted(glob.glob(os.path.join(ROOT, 'fonts', 'otf', '*.otf'))
-                                   + glob.glob(os.path.join(ROOT, 'fonts', 'ttf', '*.ttf'))
-                                   + glob.glob(os.path.join(ROOT, 'fonts', 'variable', '*.ttf')))
+    paths = sys.argv[1:] or default_paths()
     total = 0
     for path in paths:
-        f = TTFont(path)
-        is_cff = 'CFF ' in f
-        is_var = 'fvar' in f
-        gs = f.getGlyphSet()
-        probs = []
-        nglyphs = 0
-        for name in f.getGlyphOrder():
-            pen = ContourPen(gs)
-            gs[name].draw(pen)
-            if pen.contours:
-                nglyphs += 1
-            probs += check_glyph(name, pen.contours, is_cff, allow_overlap=is_var)
+        nglyphs, probs = check_font(path)
         total += len(probs)
         print(f'{os.path.basename(path)}: {nglyphs} drawn glyphs, {len(probs)} problems')
         for p in probs[:80]:

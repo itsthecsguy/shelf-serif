@@ -6,3 +6,4 @@ build/
 sources/
 docs/video/*.mp4
 docs/video/*.m4a
+.pytest_cache/
