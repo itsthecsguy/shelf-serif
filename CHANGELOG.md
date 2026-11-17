@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+The fonts are unchanged. These changes are to the tooling only.
+
+- A test suite in `tests/`, run with `make test`. It covers outlines, spacing, interpolation, OpenType shaping with HarfBuzz, names and metrics, and version consistency across the repository. It also has rules for the glyphs that went wrong in earlier releases. Run against the 5.001 fonts, it fails on the Q's advance, the rising tilde and the closed Bold 4.
+- `generator/check_outlines.py` fails when a counter fills in. It catches the 5.001 Bold 4 and the 1-unit slivers in the 5.001 Bold fractions.
+- `generator/check_spacing.py` exits with an error when two glyphs collide, instead of only printing the count.
+- `tools/glyph_diff.py` (`make diff`) renders before-and-after images of every glyph that changed, with removed ink in red and added ink in blue. CI runs it on every pull request and uploads the images.
+- `tests/snapshots/glyphs.tsv` records every glyph's metrics in text, so a glyph change shows up in the pull request's diff and has to be accepted with `make snapshot`.
+- A `Makefile`, and an `AGENTS.md` that describes the workflow for contributors.
+- CI runs the tests and builds pull requests once, not twice.
+
 ## 5.002, 2026-11-14
 
 - Redrew the eszett (ß). The old one closed its top hook with a slanted cut, which left an arrow-shaped counter, and had a sliver of white between the stem and the lower bowl. The new one is a stem that rounds over into an upper bowl, a waist bar that stops short of the stem, and a wider lower bowl.

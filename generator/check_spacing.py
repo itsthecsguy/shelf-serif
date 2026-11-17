@@ -8,6 +8,10 @@ smallest horizontal gap between the left glyph's ink and the right
 glyph's ink, measured per 4-unit band of y.  Negative means the outlines
 cross.  Pairs tighter than MIN_GAP are listed.
 
+Exit status 1 if any glyph's ink falls outside its advance, or if any
+pair's outlines cross other than the ones in ALLOW_CROSS.  Pairs that are
+merely tight are listed for information and do not fail.
+
 Usage:  python generator/check_spacing.py [--all]   (--all prints every pair under MIN_GAP)
 """
 from __future__ import annotations
@@ -27,6 +31,10 @@ Y0, Y1 = -280, 800
 NB = (Y1 - Y0) // BAND
 MIN_GAP = 40          # units; pairs tighter than this are reported
 ALLOW_LEFT_OUT = {'j', 'dotlessj', 'fraction'}  # hooks and the fraction slash may cross the left edge
+# Pairs whose outlines may touch or cross at default spacing.  The spacing
+# cedilla sits under the baseline and the j hook reaches left under it; the
+# two never meet in text, so the touch (0 units in Light) is accepted.
+ALLOW_CROSS = {('cedilla', 'j'), ('cedilla', 'dotlessj')}
 
 
 def flatten(contour, steps=24):
@@ -79,7 +87,12 @@ def profile(glyph):
     return lo, hi
 
 
-def audit(P, show_all=False):
+def audit(P, show_all=False, quiet=False):
+    """Audit one master.  Returns a dict with 'outside' (glyphs whose ink
+    leaves the advance), 'tight' (gap, left, right) for every pair under
+    MIN_GAP, and 'crossing' (the tight pairs that cross and are not in
+    ALLOW_CROSS)."""
+    say = (lambda *a: None) if quiet else print
     glyphs = build_all(P)
     kern = flat_kerning(P)
     # combining marks are zero-width by design and the accented narrow
@@ -88,19 +101,19 @@ def audit(P, show_all=False):
     names = [n for n in glyphs if n not in ('.notdef', 'space', 'uni00A0') and glyphs[n].contours
              and glyphs[n].category != 'mark' and not glyphs[n].components]
     prof = {n: profile(glyphs[n]) for n in names}
-    print(f'== {P.name}')
-    bad = 0
+    say(f'== {P.name}')
+    outside = []
     for n in names:
         lo, hi = prof[n]
         xmin, xmax = np.nanmin(lo), np.nanmax(hi)
         adv = glyphs[n].width
         if xmin < -0.5 and n not in ALLOW_LEFT_OUT:
-            print(f'  {n}: ink at x={xmin:.0f} left of the origin')
-            bad += 1
+            say(f'  {n}: ink at x={xmin:.0f} left of the origin')
+            outside.append(f'{n}: ink at x={xmin:.0f} left of the origin')
         if xmax > adv + 0.5:
-            print(f'  {n}: ink at x={xmax:.0f} beyond advance {adv}')
-            bad += 1
-    print(f'  ink inside advance: {len(names) - bad}/{len(names)} glyphs ok')
+            say(f'  {n}: ink at x={xmax:.0f} beyond advance {adv}')
+            outside.append(f'{n}: ink at x={xmax:.0f} beyond advance {adv}')
+    say(f'  ink inside advance: {len(names) - len(outside)}/{len(names)} glyphs ok')
 
     tight = []
     for a in names:
@@ -113,24 +126,29 @@ def audit(P, show_all=False):
             if g < MIN_GAP:
                 tight.append((g, a, b))
     tight.sort()
-    cross = [t for t in tight if t[0] < 0]
-    print(f'  pairs under {MIN_GAP}: {len(tight)}, crossing: {len(cross)}')
+    cross = [t for t in tight if t[0] < 0 and (t[1], t[2]) not in ALLOW_CROSS]
+    say(f'  pairs under {MIN_GAP}: {len(tight)}, crossing (not allowed): {len(cross)}')
+    for g, a, b in cross:
+        say(f'    CROSSING {a} {b} gap {g:.0f}')
     for g, a, b in (tight if show_all else tight[:30]):
-        print(f'    {a:>12} {b:<12} gap {g:6.0f}')
+        say(f'    {a:>12} {b:<12} gap {g:6.0f}')
 
     # the gaps the brief asked about, stem face to stem face
     def stem_gap(a, b):
         return glyphs[a].width + kern.get((a, b), 0) + np.nanmin(prof[b][0][(0 - Y0) // BAND:(P.xh - Y0) // BAND]) \
             - np.nanmax(prof[a][1][(0 - Y0) // BAND:(P.xh - Y0) // BAND])
-    print('  x-height band gaps: ' + '  '.join(
+    say('  x-height band gaps: ' + '  '.join(
         f'{a}{b}={stem_gap(a, b):.0f}' for a, b in (('i', 'i'), ('i', 'j'), ('i', 'l'), ('l', 'i'), ('n', 'n'), ('m', 'i'), ('k', 'l'), ('o', 'o'))))
-    return tight
+    return {'outside': outside, 'tight': tight, 'crossing': cross}
 
 
 def main():
     show_all = '--all' in sys.argv
+    failed = False
     for P in MASTERS:
-        audit(P, show_all)
+        res = audit(P, show_all)
+        failed |= bool(res['outside'] or res['crossing'])
+    sys.exit(1 if failed else 0)
 
 
 if __name__ == '__main__':

@@ -319,7 +319,7 @@ python3 -m venv .venv
 
 The build is reproducible. `build.sh` sets `SOURCE_DATE_EPOCH` to the release date, so the timestamps in every font are fixed and the same source gives the same bytes on macOS and Linux. Move that date forward when you make a release.
 
-On every push and pull request, a [GitHub Actions workflow](.github/workflows/build.yml) rebuilds the fonts, fails if they differ from the committed files, and runs Font Bakery's universal profile.
+On every pull request and every push to `main`, a [GitHub Actions workflow](.github/workflows/build.yml) rebuilds the fonts, fails if they differ from the committed files, and runs the tests and Font Bakery's universal profile. On a pull request it also renders before-and-after images of every glyph the change touches.
 
 | File | Purpose |
 | --- | --- |
@@ -330,10 +330,23 @@ On every push and pull request, a [GitHub Actions workflow](.github/workflows/bu
 | `generator/check_outlines.py` | Checks the built fonts for path direction, extremes and kinks |
 | `generator/check_spacing.py` | Audits sidebearings and the clearance between letter pairs |
 | `generator/preview.py` | Renders any list of glyph names in every weight |
+| `tests/` | The test suite, run with `make test` |
+| `tools/glyph_diff.py` | Before-and-after images of every glyph that changed |
+| `tools/glyph_snapshot.py` | Writes `tests/snapshots/glyphs.tsv`, a text record of every glyph's metrics |
 
 Code comments mention earlier working versions of the design, which aren't part of this repository.
 
-To run the checks:
+To test a change, install the dev tools and use the Makefile. [AGENTS.md](AGENTS.md) describes the workflow in full.
+
+```bash
+make setup     # .venv with the pinned build and test tools
+make build     # rebuild fonts/
+make test      # the test suite, about 10 seconds
+make diff      # before-and-after images of changed glyphs, in build/glyph-diff/
+make snapshot  # accept glyph changes into tests/snapshots/glyphs.tsv
+```
+
+The outline and spacing checks also run on their own.
 
 ```bash
 .venv/bin/python generator/check_outlines.py

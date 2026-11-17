@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageDraw, ImageFont
@@ -55,7 +56,7 @@ def main():
         d.text((40, y), text, font=f, fill=(0, 0, 0), anchor='ls')
         if missing:
             # render unencoded glyphs via a PUA-mapped copy of the font
-            tmp = f'/tmp/_preview_{style}.{fmt}'
+            tmp = os.path.join(tempfile.gettempdir(), f'_preview_{style}.{fmt}')
             cmap = tt['cmap']
             for sub in cmap.tables:
                 if sub.isUnicode():
